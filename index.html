@@ -47,6 +47,17 @@ h2{font-size:21px;letter-spacing:-.5px;margin:0 0 14px}h3{font-size:15px;margin:
   <div class="row"><h3>Mis bolsillos</h3><span class="tiny">Acumulado separado</span></div>
   <div id="pockets"></div>
  </div>
+ <div class="section card" id="billCalendar">
+  <div class="row"><h3>📅 Recibos del hogar</h3><span class="tag">Día 25</span></div>
+  <div class="item"><span>Agua</span><b>$57.000</b></div>
+  <div class="item"><span>Gas</span><b>$48.000</b></div>
+  <div class="row" style="margin-top:10px"><span class="muted">Total mensual</span><b>$105.000</b></div>
+  <div class="line"></div>
+  <div class="row"><span class="muted">Reservado este mes</span><b id="billSaved">$0</b></div>
+  <div class="progress"><span id="billBar" style="width:0%"></span></div>
+  <div class="row tiny" style="margin-top:7px"><span id="billLeft">Faltan $105.000</span><span id="billDue">Próximo pago: día 25</span></div>
+  <div class="hint" id="billAdvice" style="margin-top:12px">Se calcula cuánto separar según los días de trabajo que quedan antes del vencimiento.</div>
+ </div>
  <div class="section"><button class="btn" onclick="showPage('register')">＋ Registrar jornada</button></div>
  <div class="hint">Consejo: registra lo que realmente recibiste y lo que gastaste. Las reservas son dinero apartado, no pagos realizados.</div>
 </section>
@@ -75,12 +86,16 @@ h2{font-size:21px;letter-spacing:-.5px;margin:0 0 14px}h3{font-size:15px;margin:
   <div class="field"><label>Meta diaria de producción</label><input type="number" id="targetInput" value="50000"></div>
   <div class="field"><label>Deuda inicial</label><input type="number" id="debtInput" value="300000"></div>
   <div class="field"><label>Saldo de deuda pendiente</label><input type="number" id="debtRemainingInput" value="300000"></div>
-  <div class="line"></div><h3>Provisiones por día trabajado</h3>
+  <div class="line"></div><h3>Recibos del hogar</h3>
+  <div class="hint">Agua: $57.000 · Gas: $48.000 · Total: $105.000. Ambos vencen el día 25 de cada mes.</div>
+  <div class="field"><label>Días que planeas trabajar antes del próximo día 25</label><input type="number" min="1" max="31" id="billWorkdays" value="4"></div>
+  <div class="tiny">Puedes ajustar este número cada mes. Si descansas algún martes u otro día, réstalo para que el cálculo sea realista.</div>
+  <div class="line"></div><h3>Otras provisiones por día trabajado</h3>
   <div class="formgrid">
-   <div class="field"><label>Recibos (agua + gas)</label><input type="number" id="billsDaily" value="4375"></div>
+   <div class="field"><label>Recibos (cálculo automático)</label><input type="number" id="billsDaily" value="0" readonly>
    <div class="field"><label>InDrive + datos</label><input type="number" id="appsDaily" value="2625"></div>
   </div>
-  <div class="hint">Estimación inicial basada en 24 días trabajados al mes: recibos $105.000 y recargas/datos $62.800. Ajusta si cambian tus facturas o días de trabajo.</div>
+  <div class="hint">La reserva diaria de recibos se calcula dividiendo lo que falta para $105.000 entre los días de trabajo que indiques. InDrive y datos siguen usando su provisión diaria.</div>
   <div class="line"></div><h3>Reparto del dinero restante</h3>
   <div class="formgrid">
    <div class="field"><label>Deuda (%)</label><input type="number" id="debtPct" value="24"></div>
@@ -120,13 +135,30 @@ h2{font-size:21px;letter-spacing:-.5px;margin:0 0 14px}h3{font-size:15px;margin:
 </div></nav>
 <script>
 const KEY='miDineroDataV1';
-const defaults={settings:{target:50000,debtInitial:300000,debtRemaining:300000,billsDaily:4375,appsDaily:2625,debtPct:24,savePct:24,personalPct:18,couplePct:15},entries:[],pockets:{bills:0,apps:0,debt:0,savings:0,personal:0,couple:0,reserve:0},payments:[]};
+const defaults={settings:{target:50000,debtInitial:300000,debtRemaining:300000,billsDaily:0,billWorkdays:4,appsDaily:2625,debtPct:24,savePct:24,personalPct:18,couplePct:15},entries:[],pockets:{bills:0,apps:0,debt:0,savings:0,personal:0,couple:0,reserve:0},payments:[]};
 let data=load();
 function load(){try{let x=JSON.parse(localStorage.getItem(KEY));return x?{...defaults,...x,settings:{...defaults.settings,...x.settings},pockets:{...defaults.pockets,...x.pockets}}:structuredClone(defaults)}catch(e){return structuredClone(defaults)}}
 function persist(){localStorage.setItem(KEY,JSON.stringify(data));render()}
 function money(n){return '$'+Math.round(Number(n)||0).toLocaleString('es-CO')}
 function dateLocal(){let d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function monthKey(d){return d.slice(0,7)}
+function nextDueDate(){
+ const now=new Date(dateLocal()+'T12:00:00');
+ return now.getDate()<=25?new Date(now.getFullYear(),now.getMonth(),25):new Date(now.getFullYear(),now.getMonth()+1,25);
+}
+function dueMonthKey(){const d=nextDueDate();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
+function billProgress(){
+ const mk=dueMonthKey();
+ const added=data.entries.filter(e=>monthKey(e.date)===mk).reduce((s,e)=>s+(Number(e.alloc?.bills)||0),0);
+ const paid=data.payments.filter(p=>p.type==='bill'&&monthKey(p.date)===mk).reduce((s,p)=>s+(Number(p.amount)||0),0);
+ return Math.max(0,Math.min(105000,added-paid));
+}
+function billDaysLeft(){
+ const due=nextDueDate(), start=new Date(dateLocal()+'T12:00:00'); let n=0;
+ for(let d=new Date(start);d<due;d.setDate(d.getDate()+1)){if(d.getDay()!==3)n++;}
+ return Math.max(1,Number(data.settings.billWorkdays)||n||1);
+}
+function dailyBillTarget(){return Math.ceil(Math.max(0,105000-billProgress())/billDaysLeft())}
 function sum(a,k){return a.reduce((t,x)=>t+(Number(x[k])||0),0)}
 function render(){
  const now=dateLocal(),month=monthKey(now),entriesMonth=data.entries.filter(e=>monthKey(e.date)===month),today=data.entries.filter(e=>e.date===now);
@@ -135,6 +167,14 @@ function render(){
  document.getElementById('monthNet').textContent=money(net);document.getElementById('monthCaption').textContent=entriesMonth.length+' jornadas registradas este mes';
  document.getElementById('monthIncome').textContent=money(income);document.getElementById('monthCosts').textContent=money(costs);
  document.getElementById('savedTotal').textContent=money(data.pockets.savings);document.getElementById('debtTotal').textContent=money(data.settings.debtRemaining);
+ const bSaved=billProgress(),bPct=Math.min(100,bSaved/105000*100),due=nextDueDate();
+ document.getElementById('billSaved').textContent=money(bSaved);
+ document.getElementById('billBar').style.width=bPct+'%';
+ document.getElementById('billLeft').textContent=bSaved>=105000?'¡Recibos cubiertos!':'Faltan '+money(105000-bSaved);
+ document.getElementById('billDue').textContent='Vence: '+due.toLocaleDateString('es-CO',{day:'numeric',month:'short'});
+ document.getElementById('billAdvice').textContent=bSaved>=105000?'Ya reuniste el valor de los dos recibos. Registra el pago cuando los canceles.':'Separa aproximadamente '+money(dailyBillTarget())+' por jornada. Ajusta los días de trabajo en Presupuesto si tendrás descansos adicionales.';
+ document.getElementById('billsDaily').value=dailyBillTarget();
+
  document.getElementById('targetDisplay').textContent=money(data.settings.target);
  const todayGross=sum(today,'gross'),pct=Math.min(100,data.settings.target?todayGross/data.settings.target*100:0);
  document.getElementById('todayIncome').textContent=money(todayGross);document.getElementById('goalBar').style.width=pct+'%';
@@ -147,7 +187,7 @@ function render(){
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===p));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.page===p));if(p==='register')preview();window.scrollTo(0,0)}
 function calc(gross,fuel,other){
- let after=Math.max(0,gross-fuel-other),bills=Math.min(after,Number(data.settings.billsDaily)),apps=Math.min(Math.max(0,after-bills),Number(data.settings.appsDaily)),left=Math.max(0,after-bills-apps);
+ let after=Math.max(0,gross-fuel-other),bills=Math.min(after,dailyBillTarget()),apps=Math.min(Math.max(0,after-bills),Number(data.settings.appsDaily)),left=Math.max(0,after-bills-apps);
  let p=data.settings,parts=[['debt',p.debtPct],['savings',p.savePct],['personal',p.personalPct],['couple',p.couplePct]],used=parts.reduce((s,x)=>s+Number(x[1]),0);
  let alloc={bills,apps};parts.forEach(([k,v])=>alloc[k]=Math.floor(left*Number(v)/100));alloc.reserve=Math.max(0,left-Object.keys(alloc).reduce((s,k)=>s+alloc[k],0));return {after,alloc,left};
 }
@@ -166,9 +206,11 @@ function saveEntry(){
  persist();document.getElementById('gross').value='';document.getElementById('fuel').value='0';document.getElementById('workOther').value='0';document.getElementById('notes').value='';preview();showPage('home');alert('Jornada guardada. Recuerda que las cantidades en bolsillos son reservas, no pagos realizados.');
 }
 function saveSettings(){
- let ids=['target','debtInitial','debtRemaining','billsDaily','appsDaily','debtPct','savePct','personalPct','couplePct'],vals={};
- ids.forEach(k=>vals[k]=Number(document.getElementById(k==='debtInitial'?'debtInput':k==='debtRemaining'?'debtRemainingInput':k==='target'?'targetInput':k==='billsDaily'?'billsDaily':k==='appsDaily'?'appsDaily':k+'Pct').value)||0);
- let total=vals.debtPct+vals.savePct+vals.personalPct+vals.couplePct;if(total>100){alert('Los porcentajes suman '+total+'%. Deben sumar máximo 100%.');return}
+ const map={target:'targetInput',debtInitial:'debtInput',debtRemaining:'debtRemainingInput',billWorkdays:'billWorkdays',appsDaily:'appsDaily',debtPct:'debtPct',savePct:'savePct',personalPct:'personalPct',couplePct:'couplePct'};
+ let vals={};Object.entries(map).forEach(([k,id])=>vals[k]=Number(document.getElementById(id).value)||0);
+ let total=vals.debtPct+vals.savePct+vals.personalPct+vals.couplePct;
+ if(total>100){alert('Los porcentajes suman '+total+'%. Deben sumar máximo 100%.');return}
+ if(vals.billWorkdays<1||vals.billWorkdays>31){alert('Indica entre 1 y 31 días de trabajo.');return}
  data.settings={...data.settings,...vals};persist();alert('Presupuesto actualizado.');
 }
 function payDebt(){let v=Number(document.getElementById('debtPayment').value);if(v<=0||v>data.settings.debtRemaining){alert('Ingresa un abono válido, no mayor a la deuda pendiente.');return}data.settings.debtRemaining-=v;data.pockets.debt=Math.max(0,data.pockets.debt-v);data.payments.push({type:'debt',amount:v,date:dateLocal()});document.getElementById('debtPayment').value='';persist();alert('Abono registrado.')}
@@ -176,7 +218,7 @@ function payBill(){let v=Number(document.getElementById('billPayment').value);if
 function exportData(){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mi-dinero-respaldo-'+dateLocal()+'.json';a.click();URL.revokeObjectURL(a.href)}
 function importData(ev){let f=ev.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.settings||!x.entries||!x.pockets)throw Error();data=x;persist();alert('Copia restaurada.')}catch(e){alert('El archivo no parece ser una copia válida.')}};r.readAsText(f)}
 function resetData(){if(confirm('¿Seguro que quieres borrar todos tus registros y configuraciones? Esta acción no se puede deshacer.')){data=structuredClone(defaults);persist();}}
-function hydrateSettings(){let s=data.settings;document.getElementById('targetInput').value=s.target;document.getElementById('debtInput').value=s.debtInitial;document.getElementById('debtRemainingInput').value=s.debtRemaining;document.getElementById('billsDaily').value=s.billsDaily;document.getElementById('appsDaily').value=s.appsDaily;document.getElementById('debtPct').value=s.debtPct;document.getElementById('savePct').value=s.savePct;document.getElementById('personalPct').value=s.personalPct;document.getElementById('couplePct').value=s.couplePct}
+function hydrateSettings(){let s=data.settings;document.getElementById('targetInput').value=s.target;document.getElementById('debtInput').value=s.debtInitial;document.getElementById('debtRemainingInput').value=s.debtRemaining;document.getElementById('billWorkdays').value=s.billWorkdays||20;document.getElementById('billsDaily').value=dailyBillTarget();document.getElementById('appsDaily').value=s.appsDaily;document.getElementById('debtPct').value=s.debtPct;document.getElementById('savePct').value=s.savePct;document.getElementById('personalPct').value=s.personalPct;document.getElementById('couplePct').value=s.couplePct}
 hydrateSettings();render();
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 </script>
