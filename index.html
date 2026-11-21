@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101713">
+<meta name="description" content="Tu administrador financiero personal">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Mi Dinero</title>
+<style>
+:root{--bg:#0e1511;--panel:#17221b;--panel2:#1d2a22;--line:#2b3b30;--text:#f1f5f0;--muted:#9eafa2;--green:#9be3ad;--green2:#2b7043;--red:#ff9b9b;--amber:#f5d18a;--pink:#f4a8cf;--purple:#c6b2ff;--radius:20px}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;padding-bottom:90px}
+button,input,select{font:inherit}button{cursor:pointer}.app{max-width:760px;margin:auto;padding:20px 16px 28px}.top{display:flex;align-items:center;justify-content:space-between;margin:8px 0 22px}.brand{display:flex;align-items:center;gap:11px}.logo{width:42px;height:42px;border-radius:14px;background:var(--green);color:#102016;display:grid;place-items:center;font-size:22px;font-weight:900}.brand h1{font-size:19px;margin:0;letter-spacing:-.4px}.brand small{color:var(--muted)}.pill{border:1px solid var(--line);border-radius:999px;padding:7px 11px;color:var(--muted);font-size:12px}
+h2{font-size:21px;letter-spacing:-.5px;margin:0 0 14px}h3{font-size:15px;margin:0 0 12px}.muted{color:var(--muted)}.tiny{font-size:12px;color:var(--muted)}.hero{background:linear-gradient(135deg,#213b2a,#17251c 70%);border:1px solid #365b40;border-radius:26px;padding:22px;margin-bottom:15px}.hero .label{color:#c3d9c8;font-size:13px}.hero .amount{font-size:36px;font-weight:750;letter-spacing:-1.5px;margin:5px 0 2px}.hero .sub{color:#bfd1c2;font-size:12px}.hero-row{display:flex;justify-content:space-between;align-items:end;gap:10px}.target{background:#ffffff12;border:1px solid #ffffff1b;border-radius:14px;padding:10px 12px;text-align:right;min-width:110px}.target b{display:block;font-size:17px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:14px 0}.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:15px}.stat-label{font-size:12px;color:var(--muted)}.stat-value{font-size:21px;font-weight:700;margin-top:5px}.card-icon{font-size:18px;margin-bottom:8px}.section{margin:22px 0}.row{display:flex;justify-content:space-between;gap:12px;align-items:center}.line{height:1px;background:var(--line);margin:13px 0}.progress{height:8px;background:#2b382f;border-radius:99px;overflow:hidden;margin-top:8px}.progress span{height:100%;display:block;background:var(--green);border-radius:99px}.item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #26342a}.item:last-child{border:0}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:8px}.btn{border:0;border-radius:14px;padding:13px 16px;font-weight:700;background:var(--green);color:#102016;width:100%}.btn.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}.btn.danger{background:#4a2525;color:#ffdada}.btn.small{width:auto;padding:8px 11px;font-size:12px}.tabs{position:fixed;bottom:0;left:0;right:0;background:#101713f2;backdrop-filter:blur(18px);border-top:1px solid var(--line);display:flex;justify-content:center;z-index:10;padding:9px 5px calc(9px + env(safe-area-inset-bottom))}.tabs-inner{width:min(760px,100%);display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.tab{border:0;background:none;color:var(--muted);padding:7px 3px;border-radius:12px;font-size:11px}.tab span{display:block;font-size:19px;margin-bottom:2px}.tab.active{background:#203428;color:var(--green)}
+.page{display:none}.page.active{display:block}.field{margin:13px 0}.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}.field input,.field select{width:100%;background:#101a14;border:1px solid var(--line);border-radius:12px;color:var(--text);padding:13px;outline:none}.field input:focus,.field select:focus{border-color:var(--green)}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hint{background:#202d24;border:1px solid var(--line);border-radius:13px;padding:12px;font-size:12px;color:#c2d0c5}.alloc{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.alloc:last-child{border:0}.tag{font-size:11px;border-radius:99px;padding:4px 8px;background:#26372b;color:#c7e6ce}.empty{text-align:center;padding:28px 10px;color:var(--muted)}.history-date{font-size:12px;color:var(--muted)}.right{text-align:right}.hidden{display:none!important}
+@media(min-width:600px){.grid{grid-template-columns:repeat(4,1fr)}.hero .amount{font-size:42px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top">
+ <div class="brand"><div class="logo">₡</div><div><h1>Mi Dinero</h1><small>Tu tranquilidad, peso a peso</small></div></div>
+ <div class="pill" id="todayLabel">Hoy</div>
+</header>
+
+<section id="home" class="page active">
+ <div class="hero">
+  <div class="hero-row"><div><div class="label">Disponible registrado este mes</div><div class="amount" id="monthNet">$0</div><div class="sub" id="monthCaption">Registra tu primera jornada</div></div>
+   <div class="target"><span class="tiny">Meta diaria</span><b id="targetDisplay">$50.000</b><span class="tiny">producción bruta</span></div>
+  </div>
+ </div>
+ <div class="grid">
+  <div class="card"><div class="card-icon">🛵</div><div class="stat-label">Ingresos del mes</div><div class="stat-value" id="monthIncome">$0</div></div>
+  <div class="card"><div class="card-icon">⛽</div><div class="stat-label">Costos de trabajo</div><div class="stat-value" id="monthCosts">$0</div></div>
+  <div class="card"><div class="card-icon">🐷</div><div class="stat-label">Ahorro separado</div><div class="stat-value" id="savedTotal">$0</div></div>
+  <div class="card"><div class="card-icon">💳</div><div class="stat-label">Deuda pendiente</div><div class="stat-value" id="debtTotal">$300.000</div></div>
+ </div>
+ <div class="section card">
+  <div class="row"><h3>Tu meta de hoy</h3><span class="tag" id="goalStatus">En marcha</span></div>
+  <div class="row"><span class="muted">Producción registrada hoy</span><b id="todayIncome">$0</b></div>
+  <div class="progress"><span id="goalBar" style="width:0%"></span></div>
+  <div class="row tiny" style="margin-top:7px"><span> $0 </span><span id="goalRemaining">Faltan $50.000</span></div>
+ </div>
+ <div class="section card">
+  <div class="row"><h3>Mis bolsillos</h3><span class="tiny">Acumulado separado</span></div>
+  <div id="pockets"></div>
+ </div>
+ <div class="section"><button class="btn" onclick="showPage('register')">＋ Registrar jornada</button></div>
+ <div class="hint">Consejo: registra lo que realmente recibiste y lo que gastaste. Las reservas son dinero apartado, no pagos realizados.</div>
+</section>
+
+<section id="register" class="page">
+ <h2>Registrar jornada</h2><p class="muted">Anota lo que produjiste hoy y los gastos reales de trabajo.</p>
+ <div class="card">
+  <div class="field"><label>Fecha</label><input type="date" id="entryDate"></div>
+  <div class="field"><label>Producción de InDrive (antes de gasolina)</label><input type="number" min="0" id="gross" placeholder="Ej. 50000" inputmode="numeric"></div>
+  <div class="formgrid">
+   <div class="field"><label>Gasolina de hoy</label><input type="number" min="0" id="fuel" value="0" inputmode="numeric"></div>
+   <div class="field"><label>Otros gastos de trabajo</label><input type="number" min="0" id="workOther" value="0" inputmode="numeric"></div>
+  </div>
+  <div class="field"><label>Notas (opcional)</label><input id="notes" placeholder="Ej. día bueno, lluvia..."></div>
+  <div class="hint" id="preview">Ingresa tu producción para ver el cálculo.</div>
+  <div class="field"><label><input type="checkbox" id="applyPlan" checked style="width:auto;margin-right:8px">Aplicar distribución automática a los bolsillos</label></div>
+  <button class="btn" onclick="saveEntry()">Guardar jornada</button>
+ </div>
+ <div class="section"><h3>Cómo funciona el reparto</h3><p class="tiny">Después de descontar gasolina y otros gastos, la app separa primero una provisión diaria para recibos, recargas y datos. El resto se distribuye entre deuda, ahorro, gustos y reserva según los porcentajes configurados.</p></div>
+</section>
+
+<section id="plans" class="page">
+ <h2>Presupuesto y metas</h2>
+ <div class="card">
+  <h3>Tu configuración</h3>
+  <div class="field"><label>Meta diaria de producción</label><input type="number" id="targetInput" value="50000"></div>
+  <div class="field"><label>Deuda inicial</label><input type="number" id="debtInput" value="300000"></div>
+  <div class="field"><label>Saldo de deuda pendiente</label><input type="number" id="debtRemainingInput" value="300000"></div>
+  <div class="line"></div><h3>Provisiones por día trabajado</h3>
+  <div class="formgrid">
+   <div class="field"><label>Recibos (agua + gas)</label><input type="number" id="billsDaily" value="4375"></div>
+   <div class="field"><label>InDrive + datos</label><input type="number" id="appsDaily" value="2625"></div>
+  </div>
+  <div class="hint">Estimación inicial basada en 24 días trabajados al mes: recibos $105.000 y recargas/datos $62.800. Ajusta si cambian tus facturas o días de trabajo.</div>
+  <div class="line"></div><h3>Reparto del dinero restante</h3>
+  <div class="formgrid">
+   <div class="field"><label>Deuda (%)</label><input type="number" id="debtPct" value="24"></div>
+   <div class="field"><label>Ahorro (%)</label><input type="number" id="savePct" value="24"></div>
+   <div class="field"><label>Gustos personales (%)</label><input type="number" id="personalPct" value="18"></div>
+   <div class="field"><label>Gustos en pareja (%)</label><input type="number" id="couplePct" value="15"></div>
+  </div>
+  <p class="tiny">El porcentaje restante va a reserva y mantenimiento. Los porcentajes deben sumar máximo 100%.</p>
+  <button class="btn" onclick="saveSettings()">Guardar presupuesto</button>
+ </div>
+ <div class="section card">
+  <h3>Pagos realizados a la deuda</h3>
+  <div class="field"><label>Registrar un abono real</label><input type="number" id="debtPayment" placeholder="Valor abonado"></div>
+  <button class="btn secondary" onclick="payDebt()">Registrar abono</button>
+ </div>
+ <div class="section card">
+  <h3>Marcar recibos como pagados</h3>
+  <div class="field"><label>Valor pagado</label><input type="number" id="billPayment" placeholder="Ej. 57000"></div>
+  <button class="btn secondary" onclick="payBill()">Registrar pago de recibo</button>
+ </div>
+</section>
+
+<section id="history" class="page">
+ <h2>Historial</h2><p class="muted">Tus jornadas registradas en este dispositivo.</p>
+ <div class="card" id="historyList"><div class="empty">Todavía no hay jornadas registradas.</div></div>
+ <div class="section"><button class="btn secondary" onclick="exportData()">Exportar copia de seguridad</button></div>
+ <div class="section"><button class="btn secondary" onclick="document.getElementById('importFile').click()">Importar copia de seguridad</button><input id="importFile" class="hidden" type="file" accept="application/json" onchange="importData(event)"></div>
+ <div class="section"><button class="btn danger" onclick="resetData()">Borrar todos los datos</button></div>
+ <p class="tiny">Tus datos se guardan localmente en este navegador. Exporta una copia periódicamente para no perderlos si borras los datos del navegador o cambias de teléfono.</p>
+</section>
+</div>
+<nav class="tabs"><div class="tabs-inner">
+ <button class="tab active" data-page="home" onclick="showPage('home')"><span>⌂</span>Inicio</button>
+ <button class="tab" data-page="register" onclick="showPage('register')"><span>＋</span>Registrar</button>
+ <button class="tab" data-page="plans" onclick="showPage('plans')"><span>◎</span>Presupuesto</button>
+ <button class="tab" data-page="history" onclick="showPage('history')"><span>▤</span>Historial</button>
+</div></nav>
+<script>
+const KEY='miDineroDataV1';
+const defaults={settings:{target:50000,debtInitial:300000,debtRemaining:300000,billsDaily:4375,appsDaily:2625,debtPct:24,savePct:24,personalPct:18,couplePct:15},entries:[],pockets:{bills:0,apps:0,debt:0,savings:0,personal:0,couple:0,reserve:0},payments:[]};
+let data=load();
+function load(){try{let x=JSON.parse(localStorage.getItem(KEY));return x?{...defaults,...x,settings:{...defaults.settings,...x.settings},pockets:{...defaults.pockets,...x.pockets}}:structuredClone(defaults)}catch(e){return structuredClone(defaults)}}
+function persist(){localStorage.setItem(KEY,JSON.stringify(data));render()}
+function money(n){return '$'+Math.round(Number(n)||0).toLocaleString('es-CO')}
+function dateLocal(){let d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+function monthKey(d){return d.slice(0,7)}
+function sum(a,k){return a.reduce((t,x)=>t+(Number(x[k])||0),0)}
+function render(){
+ const now=dateLocal(),month=monthKey(now),entriesMonth=data.entries.filter(e=>monthKey(e.date)===month),today=data.entries.filter(e=>e.date===now);
+ const income=sum(entriesMonth,'gross'),costs=sum(entriesMonth,'fuel')+sum(entriesMonth,'workOther'),net=income-costs;
+ document.getElementById('todayLabel').textContent=new Date().toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});
+ document.getElementById('monthNet').textContent=money(net);document.getElementById('monthCaption').textContent=entriesMonth.length+' jornadas registradas este mes';
+ document.getElementById('monthIncome').textContent=money(income);document.getElementById('monthCosts').textContent=money(costs);
+ document.getElementById('savedTotal').textContent=money(data.pockets.savings);document.getElementById('debtTotal').textContent=money(data.settings.debtRemaining);
+ document.getElementById('targetDisplay').textContent=money(data.settings.target);
+ const todayGross=sum(today,'gross'),pct=Math.min(100,data.settings.target?todayGross/data.settings.target*100:0);
+ document.getElementById('todayIncome').textContent=money(todayGross);document.getElementById('goalBar').style.width=pct+'%';
+ document.getElementById('goalRemaining').textContent=todayGross>=data.settings.target?'¡Meta alcanzada!':'Faltan '+money(data.settings.target-todayGross);
+ document.getElementById('goalStatus').textContent=todayGross>=data.settings.target?'Meta alcanzada':'En marcha';
+ const labels=[['bills','Recibos','💧'],['apps','InDrive y datos','📱'],['debt','Deuda','💳'],['savings','Ahorros','🐷'],['personal','Gustos personales','☕'],['couple','Gustos en pareja','❤️'],['reserve','Reserva y moto','🛠️']];
+ document.getElementById('pockets').innerHTML=labels.map(([k,n,ic])=>`<div class="item"><span>${ic} ${n}</span><b>${money(data.pockets[k])}</b></div>`).join('');
+ document.getElementById('historyList').innerHTML=data.entries.length?data.entries.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`<div class="item"><div><b>${money(e.gross)}</b><div class="history-date">${e.date}${e.notes?' · '+escapeHtml(e.notes):''}</div></div><div class="right"><b>${money(e.gross-e.fuel-e.workOther)}</b><div class="history-date">Gasolina ${money(e.fuel)}</div></div></div>`).join(''):'<div class="empty">Todavía no hay jornadas registradas.</div>';
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===p));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.page===p));if(p==='register')preview();window.scrollTo(0,0)}
+function calc(gross,fuel,other){
+ let after=Math.max(0,gross-fuel-other),bills=Math.min(after,Number(data.settings.billsDaily)),apps=Math.min(Math.max(0,after-bills),Number(data.settings.appsDaily)),left=Math.max(0,after-bills-apps);
+ let p=data.settings,parts=[['debt',p.debtPct],['savings',p.savePct],['personal',p.personalPct],['couple',p.couplePct]],used=parts.reduce((s,x)=>s+Number(x[1]),0);
+ let alloc={bills,apps};parts.forEach(([k,v])=>alloc[k]=Math.floor(left*Number(v)/100));alloc.reserve=Math.max(0,left-Object.keys(alloc).reduce((s,k)=>s+alloc[k],0));return {after,alloc,left};
+}
+function preview(){let g=Number(document.getElementById('gross').value)||0,f=Number(document.getElementById('fuel').value)||0,o=Number(document.getElementById('workOther').value)||0;let c=calc(g,f,o);document.getElementById('preview').innerHTML=`Después de gastos de trabajo: <b>${money(c.after)}</b><br>Provisiones: recibos ${money(c.alloc.bills)} · InDrive/datos ${money(c.alloc.apps)}<br>Para distribuir: <b>${money(c.left)}</b>`}
+['gross','fuel','workOther'].forEach(id=>document.getElementById(id).addEventListener('input',preview));
+document.getElementById('entryDate').value=dateLocal();
+function saveEntry(){
+ let date=document.getElementById('entryDate').value,g=Number(document.getElementById('gross').value),f=Number(document.getElementById('fuel').value)||0,o=Number(document.getElementById('workOther').value)||0,notes=document.getElementById('notes').value.trim();
+ if(!date||!Number.isFinite(g)||g<=0){alert('Ingresa una fecha y una producción válida.');return}
+ if(f+o>g){if(!confirm('Los gastos superan la producción. ¿Guardar de todos modos?'))return}
+ if(data.entries.some(e=>e.date===date)){if(!confirm('Ya existe una jornada en esa fecha. ¿Agregar otra jornada?'))return}
+ let result=calc(g,f,o),applied=document.getElementById('applyPlan').checked;
+ let entry={id:Date.now(),date,gross:g,fuel:f,workOther:o,notes,alloc:applied?result.alloc:{},planApplied:applied};
+ data.entries.push(entry);
+ if(applied){Object.keys(result.alloc).forEach(k=>data.pockets[k]=(Number(data.pockets[k])||0)+result.alloc[k]);}
+ persist();document.getElementById('gross').value='';document.getElementById('fuel').value='0';document.getElementById('workOther').value='0';document.getElementById('notes').value='';preview();showPage('home');alert('Jornada guardada. Recuerda que las cantidades en bolsillos son reservas, no pagos realizados.');
+}
+function saveSettings(){
+ let ids=['target','debtInitial','debtRemaining','billsDaily','appsDaily','debtPct','savePct','personalPct','couplePct'],vals={};
+ ids.forEach(k=>vals[k]=Number(document.getElementById(k==='debtInitial'?'debtInput':k==='debtRemaining'?'debtRemainingInput':k==='target'?'targetInput':k==='billsDaily'?'billsDaily':k==='appsDaily'?'appsDaily':k+'Pct').value)||0);
+ let total=vals.debtPct+vals.savePct+vals.personalPct+vals.couplePct;if(total>100){alert('Los porcentajes suman '+total+'%. Deben sumar máximo 100%.');return}
+ data.settings={...data.settings,...vals};persist();alert('Presupuesto actualizado.');
+}
+function payDebt(){let v=Number(document.getElementById('debtPayment').value);if(v<=0||v>data.settings.debtRemaining){alert('Ingresa un abono válido, no mayor a la deuda pendiente.');return}data.settings.debtRemaining-=v;data.pockets.debt=Math.max(0,data.pockets.debt-v);data.payments.push({type:'debt',amount:v,date:dateLocal()});document.getElementById('debtPayment').value='';persist();alert('Abono registrado.')}
+function payBill(){let v=Number(document.getElementById('billPayment').value);if(v<=0){alert('Ingresa un valor válido.');return}data.pockets.bills=Math.max(0,data.pockets.bills-v);data.payments.push({type:'bill',amount:v,date:dateLocal()});document.getElementById('billPayment').value='';persist();alert('Pago de recibo registrado.')}
+function exportData(){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mi-dinero-respaldo-'+dateLocal()+'.json';a.click();URL.revokeObjectURL(a.href)}
+function importData(ev){let f=ev.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.settings||!x.entries||!x.pockets)throw Error();data=x;persist();alert('Copia restaurada.')}catch(e){alert('El archivo no parece ser una copia válida.')}};r.readAsText(f)}
+function resetData(){if(confirm('¿Seguro que quieres borrar todos tus registros y configuraciones? Esta acción no se puede deshacer.')){data=structuredClone(defaults);persist();}}
+function hydrateSettings(){let s=data.settings;document.getElementById('targetInput').value=s.target;document.getElementById('debtInput').value=s.debtInitial;document.getElementById('debtRemainingInput').value=s.debtRemaining;document.getElementById('billsDaily').value=s.billsDaily;document.getElementById('appsDaily').value=s.appsDaily;document.getElementById('debtPct').value=s.debtPct;document.getElementById('savePct').value=s.savePct;document.getElementById('personalPct').value=s.personalPct;document.getElementById('couplePct').value=s.couplePct}
+hydrateSettings();render();
+if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body></html>
